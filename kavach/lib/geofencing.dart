@@ -5,6 +5,8 @@ import 'package:easy_geofencing/enums/geofence_status.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:location/location.dart' as location;
+import 'package:meta/meta.dart';
+import 'dart:convert';
 
 class GeoFencing extends StatefulWidget {
   GeoFencing({Key? key, this.title}) : super(key: key);
@@ -41,14 +43,19 @@ class _GeoFencingState extends State<GeoFencing> {
   }
 
   Future<void> sendLocationToApi(location.LocationData locationData) async {
-    String apiUrl = 'http://localhost:9000/sample';
+    String apiUrl = 'http://<ip_address_daalo_apnaa>/sample';
     Map<String, dynamic> requestBody = {
       'latitude': locationData.latitude.toString(),
       'longitude': locationData.longitude.toString(),
     };
-    http.Response response =
-        await http.post(Uri.parse(apiUrl), body: requestBody);
-    print(response.body); // Optional: print the response from the API
+    // http.Response response =
+
+    await http.post(
+      Uri.parse(apiUrl),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(requestBody),
+    );
+    // print(response.body); // Optional: print the response from the API
   }
 
   setLocation() async {
@@ -114,13 +121,21 @@ class _GeoFencingState extends State<GeoFencing> {
               children: [
                 ElevatedButton(
                   child: Text("Start"),
-                  onPressed: () {
+                  onPressed: () async {
                     print("starting geoFencing Service");
                     EasyGeofencing.startGeofenceService(
                         pointedLatitude: latitudeController.text,
                         pointedLongitude: longitudeController.text,
                         radiusMeter: radiusController.text,
                         eventPeriodInSeconds: 5);
+                    // startSendingLocation();
+                    try {
+                      location.LocationData locationData =
+                          await loc.getLocation();
+                      await sendLocationToApi(locationData);
+                    } catch (e) {
+                      print("Errrrorrrr: ${e}");
+                    }
                     if (geofenceStatusStream == null) {
                       geofenceStatusStream = EasyGeofencing.getGeofenceStream()!
                           .listen((GeofenceStatus status) {
