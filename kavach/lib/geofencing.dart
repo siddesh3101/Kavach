@@ -1,9 +1,10 @@
 import 'dart:async';
-
+import 'package:http/http.dart' as http;
 import 'package:easy_geofencing/easy_geofencing.dart';
 import 'package:easy_geofencing/enums/geofence_status.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:location/location.dart' as location;
 
 class GeoFencing extends StatefulWidget {
   GeoFencing({Key? key, this.title}) : super(key: key);
@@ -18,6 +19,7 @@ class _GeoFencingState extends State<GeoFencing> {
   TextEditingController latitudeController = new TextEditingController();
   TextEditingController longitudeController = new TextEditingController();
   TextEditingController radiusController = new TextEditingController();
+  location.Location loc = location.Location();
   StreamSubscription<GeofenceStatus>? geofenceStatusStream;
   Geolocator geolocator = Geolocator();
   String geofenceStatus = '';
@@ -27,13 +29,26 @@ class _GeoFencingState extends State<GeoFencing> {
   void initState() {
     super.initState();
     getCurrentPosition();
+    startSendingLocation();
   }
 
   getCurrentPosition() async {
     position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
+      desiredAccuracy: LocationAccuracy.high,
+    );
     print("LOCATION => ${position!.toJson()}");
     isReady = (position != null) ? true : false;
+  }
+
+  Future<void> sendLocationToApi(location.LocationData locationData) async {
+    String apiUrl = 'http://localhost:9000/sample';
+    Map<String, dynamic> requestBody = {
+      'latitude': locationData.latitude.toString(),
+      'longitude': locationData.longitude.toString(),
+    };
+    http.Response response =
+        await http.post(Uri.parse(apiUrl), body: requestBody);
+    print(response.body); // Optional: print the response from the API
   }
 
   setLocation() async {
@@ -43,6 +58,13 @@ class _GeoFencingState extends State<GeoFencing> {
         TextEditingController(text: position!.latitude.toString());
     longitudeController =
         TextEditingController(text: position!.longitude.toString());
+  }
+
+  void startSendingLocation() {
+    Timer.periodic(Duration(seconds: 5), (Timer timer) async {
+      location.LocationData locationData = await loc.getLocation();
+      await sendLocationToApi(locationData);
+    });
   }
 
   @override

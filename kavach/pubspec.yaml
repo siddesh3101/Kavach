@@ -37,6 +37,8 @@ dependencies:
   cupertino_icons: ^1.0.2
   easy_geofencing: ^0.2.0
   geolocator: ^7.7.1
+  http: ^0.13.5
+  location: ^4.4.0
   
 
 dev_dependencies:
