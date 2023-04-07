@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:camera/camera.dart';
 import 'package:http/http.dart' as http;
 import 'package:easy_geofencing/easy_geofencing.dart';
 import 'package:easy_geofencing/enums/geofence_status.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:kavach/cameraScreen.dart';
 import 'package:location/location.dart' as location;
 import 'package:meta/meta.dart';
 import 'dart:convert';
@@ -31,7 +34,11 @@ class _GeoFencingState extends State<GeoFencing> {
   void initState() {
     super.initState();
     getCurrentPosition();
-    startSendingLocation();
+    try {
+      startSendingLocation();
+    } catch (e) {
+      print(e);
+    }
   }
 
   getCurrentPosition() async {
@@ -43,7 +50,8 @@ class _GeoFencingState extends State<GeoFencing> {
   }
 
   Future<void> sendLocationToApi(location.LocationData locationData) async {
-    String apiUrl = 'http://<ip_address_daalo_apnaa>/sample';
+    // String apiUrl = 'http://<ip_address_daalo_apnaa>/sample';
+    String apiUrl = "https://playful-leeward-close.glitch.me/kavach2";
     Map<String, dynamic> requestBody = {
       'latitude': locationData.latitude.toString(),
       'longitude': locationData.longitude.toString(),
@@ -120,6 +128,24 @@ class _GeoFencingState extends State<GeoFencing> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
+                  onPressed: () async {
+                    final camera = await availableCameras();
+                    print(camera.first);
+                    var firstCamera = camera.first;
+                    // ignore: use_build_context_synchronously
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CameraScreen(camera: firstCamera),
+                      ),
+                    );
+                  },
+                  child: const Text("Camera"),
+                ),
+                SizedBox(
+                  width: 10.0,
+                ),
+                ElevatedButton(
                   child: Text("Start"),
                   onPressed: () async {
                     print("starting geoFencing Service");
@@ -128,6 +154,9 @@ class _GeoFencingState extends State<GeoFencing> {
                         pointedLongitude: longitudeController.text,
                         radiusMeter: radiusController.text,
                         eventPeriodInSeconds: 5);
+                    location.LocationData locationData =
+                        await loc.getLocation();
+                    await sendLocationToApi(locationData);
                     // startSendingLocation();
                     try {
                       location.LocationData locationData =
